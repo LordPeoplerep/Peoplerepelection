@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Election Results Calculator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #e6ecf0;
+    color: #222;
+    margin: 40px auto;
+    max-width: 600px;
+    padding: 0 20px;
+  }
+  h1 {
+    color: #123456;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  #formula {
+    text-align: center;
+    margin-bottom: 20px;
+    font-style: italic;
+    color: #555;
+  }
+  #candidate-list {
+    margin-bottom: 20px;
+  }
+  .candidate-input {
+    background: white;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .candidate-input input[type="text"] {
+    flex: 2;
+    padding: 8px;
+    font-size: 1rem;
+  }
+  .candidate-input input[type="number"] {
+    flex: 1;
+    padding: 8px;
+    font-size: 1rem;
+  }
+  .candidate-input button.remove-btn {
+    background: #cc3333;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button#add-candidate, button#calculate, button#download-results {
+    background: #123456;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  button#add-candidate:hover, button#calculate:hover, button#download-results:hover {
+    background: #0d2a4d;
+  }
+  #results {
+    margin-top: 30px;
+    background: white;
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  .result-item {
+    margin-bottom: 12px;
+    font-size: 1.05rem;
+  }
+  .result-label {
+    font-weight: bold;
+  }
+  .winner {
+    color: #006600;
+    font-weight: bold;
+    font-size: 1.3rem;
+    margin-top: 20px;
+    text-align: center;
+  }
+  .tie {
+    color: #cc6600;
+    font-weight: bold;
+    font-size: 1.3rem;
+    margin-top: 20px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Election Results Calculator</h1>
+<div id="formula">
+  Integrity Ratio: AVᵢ ÷ TVᵢ
+</div>
+
+<div id="candidate-list">
+  <div class="candidate-input">
+    <input type="text" placeholder="Candidate Name" class="name" />
+    <input type="number" placeholder="Total Votes" class="total-votes" min="0" />
+    <input type="number" placeholder="Authentic Votes" class="auth-votes" min="0" />
+  </div>
+</div>
+
+<button id="add-candidate">Add Candidate</button>
+<button id="calculate">Calculate Results</button>
+<button id="download-results">Download Results</button>
+
+<div id="results"></div>
+
+<script>
+  const candidateList = document.getElementById("candidate-list");
+  const addCandidateBtn = document.getElementById("add-candidate");
+  const calculateBtn = document.getElementById("calculate");
+  const downloadBtn = document.getElementById("download-results");
+  const resultsDiv = document.getElementById("results");
+
+  function addCandidateInput() {
+    const div = document.createElement("div");
+    div.className = "candidate-input";
+    div.innerHTML = `
+      <input type="text" placeholder="Candidate Name" class="name" />
+      <input type="number" placeholder="Total Votes" class="total-votes" min="0" />
+      <input type="number" placeholder="Authentic Votes" class="auth-votes" min="0" />
+      <button class="remove-btn">X</button>
+    `;
+    candidateList.appendChild(div);
+    div.querySelector(".remove-btn").addEventListener("click", () => div.remove());
+  }
+
+  // Initial input
+  addCandidateInput();
+
+  addCandidateBtn.addEventListener("click", addCandidateInput);
+
+  calculateBtn.addEventListener("click", () => {
+    resultsDiv.innerHTML = "";
+    const names = Array.from(document.querySelectorAll(".name")).map(i => i.value.trim());
+    const totalArr = Array.from(document.querySelectorAll(".total-votes")).map(i => parseInt(i.value));
+    const authArr = Array.from(document.querySelectorAll(".auth-votes")).map(i => parseInt(i.value));
+
+    for(let i=0; i<names.length; i++){
+      if(!names[i]|| isNaN(totalArr[i])|| totalArr[i]<0 || isNaN(authArr[i])|| authArr[i]<0){
+        alert("Please complete all fields correctly for candidate " + (i+1));
+        return;
+      }
+      if(authArr[i] > totalArr[i]){
+        alert("Authentic Votes cannot exceed Total Votes for " + names[i]);
+        return;
+      }
+    }
+
+    const maxAuth = Math.max(...authArr);
+    const winners = names.filter((n,i)=>authArr[i]===maxAuth);
+
+    resultsDiv.innerHTML += `
+      <div class="result-item result-label" style="display:flex;gap:30px;border-bottom:1px solid #ccc;padding-bottom:8px;">
+        <div style="flex:2;">Candidate</div>
+        <div style="flex:1;">TV</div>
+        <div style="flex:1;">AV</div>
+        <div style="flex:1;">AV/TV%</div>
+      </div>
+    `;
+
+    names.forEach((n,i)=>{
+      const avtv = totalArr[i] ? ((authArr[i]/totalArr[i])*100).toFixed(2) + "%" : "0%";
+      const isWin = authArr[i] === maxAuth;
+      resultsDiv.innerHTML += `
+        <div class="result-item" style="display:flex;gap:30px;font-weight:${isWin?'bold':'normal'};color:${isWin?'#006600':'#333'};">
+          <div style="flex:2;">${n}</div>
+          <div style="flex:1;">${totalArr[i]}</div>
+          <div style="flex:1;">${authArr[i]}</div>
+          <div style="flex:1;">${avtv}</div>
+        </div>
+      `;
+    });
+
+    if(winners.length === 1){
+      resultsDiv.innerHTML += `<div class="winner">Winner: ${winners[0]}</div>`;
+    } else {
+      resultsDiv.innerHTML += `<div class="tie">Tie between: ${winners.join(", ")}</div>`;
+    }
+  });
+
+  downloadBtn.addEventListener("click", () => {
+    let text = "Candidate,Total Votes,Authentic Votes,AV/TV%\n";
+    document.querySelectorAll(".result-item").forEach((row, idx) => {
+      if(idx === 0) return;
+      const cols = row.children;
+      const line = Array.from(cols).map(c => c.textContent).join(",");
+      text += line + "\n";
+    });
+    const blob = new Blob([text], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "election_results.csv";
+    link.click();
+  });
+</script>
+
+</body>
+</html>
